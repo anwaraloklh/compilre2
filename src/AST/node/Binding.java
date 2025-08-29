@@ -2,16 +2,26 @@ package AST.node;
 
 public class Binding extends ASTNode {
 
+    private String string;
+    private String name;
+    private boolean twoWay;
+    private String elementType;
 
-    String string;
-    public void print (){
-        System.out.print("  "+string);
-    }
-    public String getString() {
-        return string;
+    public Binding() {
+        this.twoWay = false;
+        this.elementType = "div";
     }
 
-    public void setString(String string) {
-        this.string = string;
-    }
+    // getters / setters
+    public String getString() { return string; }
+    public void setString(String string) { this.string = string; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public boolean isTwoWay() { return twoWay; }
+    public void setTwoWay(boolean twoWay) { this.twoWay = twoWay; }
+
+    public String getElementType() { return elementType; }
+    public void setElementType(String elementType) { this.elementType = elementType; }
 }

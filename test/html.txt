@@ -1,0 +1,191 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+
+
+@Component({
+
+  selector: 'app-root',
+  standalone: true,
+  imports:[CommonModule, FormsModule],
+  template: `
+    <nav>
+      <button (click)="goTo('list')">Products</button>
+      <button (click)="goTo('add')">Add Product</button>
+    </nav>
+
+    <div *ngIf="currentPage === 'list'">
+      <h2>Products</h2>
+      <div style="display:flex; gap:15px; flex-wrap:wrap;">
+      <div *ngFor="let p of images; let i = index"
+             style="border:1px solid #ccc; border-radius:8px; padding:10px; width:180px; text-align:center; background:white; cursor:pointer;"
+             (click)="viewDetails(p, i)">
+          <p>{{ p.name }}</p>
+          <img [src]="p.source" [alt]="p.name" style="width:120px; height:100px; object-fit:cover;"/>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="currentPage === 'add'">
+      <h2>Add Product</h2>
+      <form (ngSubmit)="addProduct()" style="max-width:250px;">
+        <input [(ngModel)]="newName" placeholder="Name" required/>
+        <input [(ngModel)]="newImage"placeholder="Image URL" required/>
+        <textarea [(ngModel)]="newDetails"  placeholder="Details" rows="3" required></textarea>
+        <button type="submit">Add</button>
+      </form>
+    </div>
+
+    <div *ngIf="currentPage === 'details' && selectedProduct">
+      <h2>Product Details</h2>
+      <img [src]="selectedProduct.source" [alt]="selectedProduct.name"
+           style="width:200px; display:block; margin-bottom:10px; border-radius:8px;"/>
+      <h2>{{ selectedProduct.name }}</h2>
+      <p>{{ selectedProduct.details }}</p>
+      <button (click)="goTo('list')">Back</button>
+       <button (click)="deleteProduct(selectedIndex)" style="background:darkred;">Delete</button>
+    </div>
+
+
+
+  `,
+
+
+styles: [`
+
+  div {
+    font-size: 16px;
+    color: black;
+    background: #f0f0f0;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
+
+  nav {
+    font-size: 20px;
+    color: white;
+      background: #007bff;
+    margin: 20px;
+    padding: 20px;
+    border: solid;
+  }
+
+  h2 {
+    font-size: 30px;
+    color: #222;
+    background: #ffc107;
+    margin: 20px;
+    padding: 10px;
+    border: solid;
+  }
+
+  p {
+    font-size: 18px;
+    color: black;
+    background: lightyellow;
+    margin: 10px;
+    padding: 5px;
+    border: solid;
+  }
+
+  img {
+    font-size: 16px;
+    color: black;
+    background: white;
+    width: 250px;
+    height: 200px;
+    margin: 10px;
+    padding: 5px;
+    border: solid;
+  }
+
+  button {
+    font-size: 18px;
+    color: white;
+    background: darkgreen;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
+
+  form {
+    font-size: 18px;
+    color: black;
+    background: lightgray;
+    margin: 20px;
+    padding: 20px;
+    border: solid;
+  }
+
+  input {
+    font-size: 16px;
+    color: black;
+    background: white;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
+
+  textarea {
+    font-size: 16px;
+    color: black;
+    background: white;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
+`]
+
+
+})
+
+export class AppComponent {
+
+
+
+  images = [
+    { name: 'Product 1', source: 'assets/Image/1.jpg', details: 'Details of Product 1.' },
+    { name: 'Product 2', source: 'assets/Image/2.jpg', details: 'Details of Product 2.' },
+    { name: 'Product 3', source: 'assets/Image/3.jpg', details: 'Details of Product 3.' }
+  ];
+
+
+  currentPage: 'list' | 'add' | 'details' = 'list';
+  selectedProduct: any = null;
+  selectedIndex: number = 1;
+
+
+  newName = '';
+  newImage = '';
+  newDetails = '';
+
+
+  goTo(page: 'list' | 'add' | 'details') {
+    this.currentPage = page;
+  }
+
+
+  viewDetails(product: any, index: number) {
+    this.selectedProduct = product;
+    this.selectedIndex = index;
+    this.goTo('details');
+  }
+
+
+  addProduct() {
+    this.images.push({ name: this.newName, source: this.newImage, details: this.newDetails });
+    this.newName = this.newImage = this.newDetails = '';
+    this.goTo('list');
+  }
+
+  deleteProduct(index: number) {
+
+    this.images.splice(index, 1);
+    this.goTo('list');
+  }
+
+}
+
+

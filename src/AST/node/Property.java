@@ -7,7 +7,7 @@ public class Property extends ASTNode {
 
     public void print(int i) {
         System.out.print(key + ": ");
-        value.print(i);
+
     }
 
     public String getKey() { return key; }

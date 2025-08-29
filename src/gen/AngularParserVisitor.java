@@ -131,11 +131,29 @@ public interface AngularParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitHtmlElement(AngularParser.HtmlElementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link AngularParser#formElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFormElement(AngularParser.FormElementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link AngularParser#divElement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDivElement(AngularParser.DivElementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link AngularParser#buttonElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitButtonElement(AngularParser.ButtonElementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link AngularParser#navElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNavElement(AngularParser.NavElementContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link AngularParser#pElement}.
 	 * @param ctx the parse tree
@@ -154,6 +172,18 @@ public interface AngularParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitImgElement(AngularParser.ImgElementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link AngularParser#inputElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInputElement(AngularParser.InputElementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link AngularParser#textareaElement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTextareaElement(AngularParser.TextareaElementContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link AngularParser#htmlAttributes}.
 	 * @param ctx the parse tree
@@ -197,17 +227,17 @@ public interface AngularParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAltAttribute(AngularParser.AltAttributeContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link AngularParser#formAttribute}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFormAttribute(AngularParser.FormAttributeContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link AngularParser#variableStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitVariableStatement(AngularParser.VariableStatementContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link AngularParser#arrayy}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitArrayy(AngularParser.ArrayyContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link AngularParser#array}.
 	 * @param ctx the parse tree
@@ -251,12 +281,6 @@ public interface AngularParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitType(AngularParser.TypeContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link AngularParser#functionDeclaration}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionDeclaration(AngularParser.FunctionDeclarationContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link AngularParser#classDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -268,6 +292,12 @@ public interface AngularParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitClassBody(AngularParser.ClassBodyContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link AngularParser#functionDeclaration}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionDeclaration(AngularParser.FunctionDeclarationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link AngularParser#constructorDeclaration}.
 	 * @param ctx the parse tree
@@ -293,61 +323,17 @@ public interface AngularParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExportStatement(AngularParser.ExportStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code ParenthesizedExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
+	 * Visit a parse tree produced by {@link AngularParser#expressionList}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitParenthesizedExpression(AngularParser.ParenthesizedExpressionContext ctx);
+	T visitExpressionList(AngularParser.ExpressionListContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code PropertyBindingExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
+	 * Visit a parse tree produced by {@link AngularParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitPropertyBindingExpression(AngularParser.PropertyBindingExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code LiteralExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitLiteralExpression(AngularParser.LiteralExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code TwoWayBindingExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTwoWayBindingExpression(AngularParser.TwoWayBindingExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code AdditionSubtractionExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAdditionSubtractionExpression(AngularParser.AdditionSubtractionExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code MultiplicationDivisionExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitMultiplicationDivisionExpression(AngularParser.MultiplicationDivisionExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code NgDirectiveExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitNgDirectiveExpression(AngularParser.NgDirectiveExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code IdentifierExpression}
-	 * labeled alternative in {@link AngularParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIdentifierExpression(AngularParser.IdentifierExpressionContext ctx);
+	T visitExpression(AngularParser.ExpressionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link AngularParser#literal}.
 	 * @param ctx the parse tree

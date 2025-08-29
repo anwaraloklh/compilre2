@@ -106,8 +106,8 @@ public class SymbolTabol {
 
     public void print(boolean printHeader) {
         if (printHeader) {
-            System.out.printf("%-15s %-10s %-20s %-15s %-20s%n", "Line", "Scope", "Name", "Type", "Value");
-            System.out.println("-------------------------------------------------------------------------------------------");
+            System.out.printf("%-15s %-10s %-20s %-15s %-20s%n", " Line ", " Scope", "                             Name                    " , "                   Type        ", "                  Value       ");
+            System.out.println("-------------------------------------------------------------------------------------------=------------------------------------------------------------------------------------------");
         }
 
         if (rows.isEmpty()) {
@@ -116,7 +116,7 @@ public class SymbolTabol {
             for (Row row : rows) {
                 if (row != null) {
                     System.out.printf(
-                            "%-15s %-10s %-20s %-15s %-20s%n",
+                            "%-15s %-40s %-40s %-25s %-20s%n",
                             row.getLine(),
                             row.getScope(),
                             row.getName(),

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Products App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+
+    nav {
+      font-size: 20px;
+      color: white;
+      background: #007bff;
+      margin: 20px;
+      padding: 20px;
+      border: solid;
+    }
+
+    nav button {
+      font-size: 18px;
+      color: white;
+      background: darkgreen;
+      margin: 10px;
+      padding: 10px;
+      border: solid;
+      cursor: pointer;
+    }
+
+    h2 {
+      font-size: 30px;
+      color: #222;
+      background: #ffc107;
+      margin: 20px;
+      padding: 10px;
+      border: solid;
+    }
+
+    p {
+      font-size: 18px;
+      color: black;
+      background: lightyellow;
+      margin: 10px;
+      padding: 5px;
+      border: solid;
+    }
+
+    img {
+      width: 250px;
+      height: 200px;
+      object-fit: cover;
+      margin: 10px;
+      padding: 5px;
+      border: solid;
+    }
+
+    .products {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .product-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      width: 180px;
+      text-align: center;
+      background: white;
+      cursor: pointer;
+    }
+
+    form {
+      font-size: 18px;
+      background: lightgray;
+      margin: 20px;
+      padding: 20px;
+      border: solid;
+      max-width: 250px;
+    }
+
+    form input, form textarea {
+      width: 100%;
+      font-size: 16px;
+      margin: 10px 0;
+      padding: 10px;
+      border: solid;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <button onclick="goTo('list')">Products</button>
+    <button onclick="goTo('add')">Add Product</button>
+  </nav>
+
+  <div id="listPage">
+    <h2>Products</h2>
+    <div class="products" id="productsContainer"></div>
+  </div>
+
+  <div id="addPage" style="display:none;">
+    <h2>Add Product</h2>
+    <form onsubmit="addProduct(event)">
+      <input id="newName" placeholder="Name" required>
+      <input id="newImage" placeholder="Image URL" required>
+      <textarea id="newDetails" placeholder="Details" rows="3" required></textarea>
+      <button type="submit">Add</button>
+    </form>
+  </div>
+
+  <div id="detailsPage" style="display:none;">
+    <h2>Product Details</h2>
+    <img id="detailImage">
+    <h2 id="detailName"></h2>
+    <p id="detailText"></p>
+    <button onclick="goTo('list')">Back</button>
+    <button id="deleteBtn" style="background:darkred;">Delete</button>
+  </div>
+
+  <script>
+    let products = [
+      { name: 'Product 1', source: 'assets/Image/1.jpg', details: 'Details of Product 1.' },
+      { name: 'Product 2', source: 'assets/Image/2.jpg', details: 'Details of Product 2.' },
+      { name: 'Product 3', source: 'assets/Image/3.jpg', details: 'Details of Product 3.' }
+    ];
+
+    let selectedIndex = null;
+
+    function renderProducts() {
+      const container = document.getElementById('productsContainer');
+      container.innerHTML = '';
+      products.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <p>${p.name}</p>
+          <img src="${p.source}" alt="${p.name}">
+        `;
+        card.onclick = () => viewDetails(i);
+        container.appendChild(card);
+      });
+    }
+
+    function goTo(page) {
+      document.getElementById('listPage').style.display = (page === 'list') ? 'block' : 'none';
+      document.getElementById('addPage').style.display = (page === 'add') ? 'block' : 'none';
+      document.getElementById('detailsPage').style.display = (page === 'details') ? 'block' : 'none';
+      if (page === 'list') renderProducts();
+    }
+
+    function addProduct(event) {
+      event.preventDefault();
+      const name = document.getElementById('newName').value;
+      const image = document.getElementById('newImage').value;
+      const details = document.getElementById('newDetails').value;
+      products.push({ name, source: image, details });
+      document.getElementById('newName').value = '';
+      document.getElementById('newImage').value = '';
+      document.getElementById('newDetails').value = '';
+      goTo('list');
+    }
+
+    function viewDetails(index) {
+      selectedIndex = index;
+      const p = products[index];
+      document.getElementById('detailImage').src = p.source;
+      document.getElementById('detailName').innerText = p.name;
+      document.getElementById('detailText').innerText = p.details;
+      document.getElementById('deleteBtn').onclick = () => deleteProduct(index);
+      goTo('details');
+    }
+
+    function deleteProduct(index) {
+      products.splice(index, 1);
+      goTo('list');
+    }
+
+
+    renderProducts();
+  </script>
+
+</body>
+</html>

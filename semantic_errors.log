@@ -1,6 +1,0 @@
-SEMANTIC ERROR: TYPO_IMPORT at line 1: Typo: 'NgModule' should likely be 'NgModule' when importing from '@angular/core'.
-SEMANTIC ERROR: ACCESS_MODIFIER_INVALID_SCOPE at line 7: Access modifier 'public' is only allowed for class members.
-SEMANTIC ERROR: HTML_SEMANTIC_ERROR at line 22: <img> tag missing required 'src' attribute.
-SEMANTIC ERROR: DUPLICATE_CSS_PROPERTY at line 43: Duplicate CSS property 'color' in the same style rule.
-SEMANTIC ERROR: MISSING_CONST_INITIALIZER at line 59: Constant 'y' must be initialized.
-SEMANTIC ERROR: MISSING_TEMPLATE_OR_STYLE at line 83: @Component must have at least a template or styles defined.

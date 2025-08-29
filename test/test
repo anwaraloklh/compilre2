@@ -1,89 +1,195 @@
-import { NgModule } from '@angular/core';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
- import { Component } from '@angular/core';
- import { CommonModule } from '@angular/common';
+
+import { ngmodule } from '@angular/core';
 
 
-  public b=bb;
+ public b=bb;
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports:["CommonModule"],
+  imports:[CommonModule, FormsModule],
   template: `
+    <nav>
+      <button (click)="goTo('list')">Products</button>
+      <button (click)="goTo('add')">Add Product</button>
+    </nav>
 
-  <div style="display: flex;">
-    <div style="margin-right: 20px;">
-
-      <div *ngFor="let image of images" (click)="selectProduct(image)" style="cursor: pointer; margin-bottom: 10px;">
-      <p>{{ image.name }}</p>
-        <img [src]="image.source" [alt]="image.name" style="width: 100px; display: block;"/>
-
-
-        <img [alt]="image.name" style="width: 100px; display: block;"/>
-
+    <div *ngIf="currentPage === 'list'">
+      <h2>Products</h2>
+      <div style="display:flex; gap:15px; flex-wrap:wrap;">
+      <div *ngFor="let p of images; let i = index"
+             style="border:1px solid #ccc; border-radius:8px; padding:10px; width:180px; text-align:center; background:white; cursor:pointer;"
+             (click)="viewDetails(p, i)">
+          <p>{{ p.name }}</p>
+          <img [src]="p.source" [alt]="p.name" style="width:120px; height:100px; object-fit:cover;"/>
+        </div>
       </div>
     </div>
 
-
-
-    <div *ngIf="selectedProduct">
-
-    <h2>{{ userName }}</h2>
-      <h2>{{ selectedProduct.name }}</h2>
-      <img [src]="selectedProduct.source" [alt]="selectedProduct.name" style="width: 200px; display: block; margin-bottom: 10px;"/>
-      <p>{{ selectedProduct.details }}</p>
-
+    <div *ngIf="currentPage === 'add'">
+      <h2>Add Product</h2>
+      <form (ngSubmit)="addProduct()" style="max-width:250px;">
+        <input [(ngModel)]="newName" placeholder="Name" required/>
+        <input [(ngModel)]="newImage"placeholder="Image URL" required/>
+        <textarea [(ngModel)]="newDetails"  placeholder="Details" rows="3" required></textarea>
+        <button type="submit">Add</button>
+      </form>
     </div>
-  </div>
-  `
- ,styles: [`
-       div {
-         font-size: 16px;
-         color: red;
-         color: blue;
-       },
-       p{
-         font-size: 16px;
-         color: red;
 
-       }
+    <div *ngIf="currentPage === 'details' && selectedProduct">
+      <h2>Product Details</h2>
+      <img [src]="selectedProduct.source" [alt]="selectedProduct.name"
+           style="width:200px; display:block; margin-bottom:10px; border-radius:8px;"/>
+      <h2>{{ selectedProduct.name }}</h2>
+      <p>{{ selectedProduct.details }}</p>
+      <button (click)="goTo('list')">Back</button>
+       <button (click)="deleteProduct(selectedIndex)" style="background:darkred;">Delete</button>
+    </div>
+    <h2>{{ userName }}</h2>
 
+  `,
+styles: [`
+  div {
+    font-size: 16px;
+    color: black;
+       color: blue;
+    background: #f0f0f0;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
 
-     `]
+  nav {
+    font-size: 20px;
+    color: white;
+      background: #007bff;
+    margin: 20px;
+    padding: 20px;
+    border: solid;
+  }
+
+  h2 {
+    font-size: 30px;
+    color: #222;
+    background: #ffc107;
+    margin: 20px;
+    padding: 10px;
+    border: solid;
+  }
+
+  p {
+    font-size: 18px;
+    color: black;
+    background: lightyellow;
+    margin: 10px;
+    padding: 5px;
+    border: solid;
+  }
+
+  img {
+    font-size: 16px;
+    color: black;
+    background: white;
+    width: 250px;
+    height: 200px;
+    margin: 10px;
+    padding: 5px;
+    border: solid;
+  }
+
+  button {
+    font-size: 18px;
+    color: white;
+    background: darkgreen;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
+
+  form {
+    font-size: 18px;
+    color: black;
+    background: lightgray;
+    margin: 20px;
+    padding: 20px;
+    border: solid;
+  }
+
+  input {
+    font-size: 16px;
+    color: black;
+    background: white;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
+
+  textarea {
+    font-size: 16px;
+    color: black;
+    background: white;
+    margin: 10px;
+    padding: 10px;
+    border: solid;
+  }
+`]
+
 })
 export class AppComponent {
-   int x = 10 * 2;
- public userName: string = 'World';
-  private userAge: number = 30;
+
 
   const y;
+
+private userAge: number = 30;
+
+
 
 
   images = [
     { name: 'Product 1', source: 'assets/Image/1.jpg', details: 'Details of Product 1.' },
     { name: 'Product 2', source: 'assets/Image/2.jpg', details: 'Details of Product 2.' },
-    { name: 'Product 3', source: 'assets/Image/3.jpg ', details: 'Details of Product 3.' }
+    { name: 'Product 3', source: 'assets/Image/3.jpg', details: 'Details of Product 3.' }
+
   ];
 
-
+  currentPage: 'list' | 'add' | 'details' = 'list';
   selectedProduct: any = null;
+  selectedIndex: number = 1;
 
+  newName = '';
+  newImage = '';
+  newDetails = '';
 
-
-  selectProduct(product: any) {
-    this.selectedProduct = product;
+  goTo(page: 'list' | 'add' | 'details') {
+    this.currentPage = page;
   }
 
+  viewDetails(product: any, index: number) {
+    this.selectedProduct = product;
+    this.selectedIndex = index;
+    this.goTo('details');
+  }
+
+
+  addProduct() {
+    this.images.push({ name: this.newName, source: this.newImage, details: this.newDetails });
+    this.newName = this.newImage = this.newDetails = '';
+    this.goTo('list');
+  }
+  deleteProduct(index: number) {
+    this.images.splice(index, 1);
+    this.goTo('list');
+  }
 
 }
 
 
-
-
 @Component({
-
+  selector: 'app-empty'
 })
+
 export class EmptyComponent {}
-
-
 

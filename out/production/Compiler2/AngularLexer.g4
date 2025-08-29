@@ -17,6 +17,8 @@ AT               : '@' ;
 TRUE             : 'true' ;
 FALSE            : 'false' ;
 OF               : 'of';
+ANY              :'any';
+THIS             : 'this';
 
 // Angular-specific Tokens
 AT_COMPONENT      : '@Component' ;
@@ -33,69 +35,22 @@ H2_TAG            : 'h2';
 H1_TAG            : 'h1';
 H3_TAG            : 'h3';
 BUTTON            : 'button';
+NAV               :'nav';
+FORM               :'form';
+INPUT              :'input';
+TEXTAREA          :'textarea';
 HTML_TAG_OPEN     : '<';
 HTML_TAG_CLOSE    : '>';
 HTML_TAG_END      : '</';
 HTML_SELF_CLOSING : '/>';
 
 
-
- ADD : '+';
- SUB : '-';
- MULT : '*';
- DIV : '/';
-
-// CSS properties
-COLOR        : 'color';
-BACKGROUND   : 'background';
-FONT_SIZE    : 'font-size';
-WIDTH        : 'width';
-HEIGHT       : 'height';
-DISPLAY      : 'display';
-POSITION     : 'position';
-MARGIN       : 'margin';
-PADDING      : 'padding';
-BORDER       : 'border';
-
-IMPORTS      : 'imports' ;
-
-BINDING           : '[' Identifier ']' ;
-TWO_WAY_BINDING   : '[(' Identifier ')]' ;
-PROPERTY_BINDING  : '{{' .*? '}}' ;
-
-// Attributes
-Alt               : 'alt';
-Src               : 'src';
-
-// Angular Directives & Events
-NG_FOR        : '*ngFor' ;
-NG_IF         : '*ngIf' ;
-CLICK_EVENT   : '(click)' ;
-
-// CSS values
-CSS_COLOR_HEX : '#' ([a-fA-F0-9]|[a-fA-F0-9]) ;
-CSS_UNIT      : [0-9]+('px'|'em'|'rem'|'%') ;
-CSS_KEYWORD   : 'auto' | 'solid' ;
-
-// Literals
-StringLiteral     : '"' (~["\\\r\n])* '"' | '\'' (~['\\\r\n])* '\'' ;
-NumberLiteral     : [0-9]+ ('.' [0-9]+)? ;
-BooleanLiteral    : TRUE | FALSE ;
-
-// Identifiers and selectors
-HASH_SELECTOR : '#' Identifier ;
-Identifier    : [a-zA-Z_$][a-zA-Z0-9_$]* ;
-
-// Types
-STRING   : 'string';
-NUMBER   : 'number';
-BOOLEAN  : 'boolean';
-
-
-
-
-
-// Symbols
+// Operators and Symbols
+ADD : '+';
+SUB : '-';
+MULT : '*';
+DIV : '/';
+PIPE : '|';
 DOT         : '.' ;
 ARRAY_START : '[' ;
 ARRAY_END   : ']' ;
@@ -106,11 +61,91 @@ RPAREN      : ')' ;
 COLON       : ':' ;
 COMMA       : ',' ;
 EQUAL       : '=' ;
+EQUALD      :'===';
 BACKTICK    : '`' ;
 
-DIRECTIVE         : '\\*[a-zA-Z][a-zA-Z0-9_]*' ;
-EVENT_BINDING     : '\\([a-zA-Z][a-zA-Z0-9_]*\\)' ;
+
+// CSS properties
+COLOR         : 'color';
+BACKGROUND    : 'background';
+FONT_SIZE     : 'font-size';
+FONT_WEIGHT   : 'font-weight';
+WIDTH         : 'width';
+HEIGHT        : 'height';
+DISPLAY       : 'display';
+POSITION      : 'position';
+MARGIN        : 'margin';
+PADDING       : 'padding';
+BORDER        : 'border';
+BORDER_RADIUS : 'border-radius';
+BOX_SHADOW    : 'box-shadow';
+CURSOR        : 'cursor';
+OBJECT_FIT    : 'object-fit';
+TRANSITION    : 'transition';
+TRANSFORM     : 'transform';
+OUTLINE       : 'outline';
+TEXT_ALIGN    : 'text-align';
+FLEX_WRAP     : 'flex-wrap';
+GAP           : 'gap';
+// CSS values and keywords
+CSS_UNIT        : [0-9]+('px'|'em'|'rem'|'%') | '0';
+CSS_COLOR_HEX   : '#' ([a-fA-F0-9])+;
+CSS_KEYWORD     : 'auto' | 'solid' | 'pointer' | 'cover' | 'white' | 'none' | 'flex' | 'block' | 'center' | 'ease-in-out' | 'to right';
+LINEAR_GRADIENT : 'linear-gradient';
+ALL             : 'all';
+
+// Selectors and Pseudo-classes
+FOCUS           : 'focus';
+HOVER           : 'hover';
+SUBMIT          : 'submit';
+LBRACKET        : '[';
+RBRACKET        : ']';
+ASTERISK        : '*';
+COLON_SELECTOR  : ':';
+
+
+IMPORTS          : 'imports' ;
+TYPE             : 'type';
+PLACEHOLDER      : 'placeholder';
+ROWS             : 'rows';
+REQUIRED_ATTR    : 'required';
+
+BINDING           : '[' Identifier ']' ;
+TWO_WAY_BINDING   : '[(' Identifier ')]' ;
+PROPERTY_BINDING  : '{{' .*? '}}' ;
+
+// Attributes
+Alt               : 'alt';
+Src               : 'src';
+STYLE_ATTR        : 'style';
+
+// Angular Directives & Events
+NG_FOR        : '*ngFor' ;
+NG_IF         : '*ngIf' ;
+CLICK_EVENT   : '(click)' ;
+NG_SUBMIT_EVENT:'('Identifier')';
+
+
+
+// Literals
+StringLiteral     : '"' (~["\\\r\n])* '"' | '\'' (~['\\\r\n])* '\'' ;
+NumberLiteral     : [0-9]+ ('.' [0-9]+)? ;
+BooleanLiteral    : TRUE | FALSE ;
+
+// Identifiers and selectors
+HASH_SELECTOR : '#' Identifier ;
+Identifier    : [a-zA-Z_$][a-zA-Z0-9_$]* ;
+TO           :'to';
+// Types
+STRING   : 'string';
+NUMBER   : 'number';
+BOOLEAN  : 'boolean';
 
 // Whitespace and Comments
-WHITESPACE : [ \t\r\n]+ -> skip ;
+WS              : [ \t\r\n]+ -> skip;
 COMMENT    : '//' ~[\r\n]* -> skip;
+LINE_COMMENT : '//' .*? '\n' -> skip;
+HTML_COMMENT: '<!--' .*? '-->' -> skip;
+
+// Special cases
+DOT_DOT : '..';

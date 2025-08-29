@@ -39,13 +39,10 @@ public class SemanticErrorReporter {
         SymbolTabol snapshot = fullSymbolTable.getErrorSnapshot(problematicRows);
         errors.add(new ErrorDetail(errorType, message, lineNumber, snapshot));
     }
-
-
     public void printAllErrors() {
         if (errors.isEmpty()) {
             return;
         }
-
 
         for (ErrorDetail error : errors) {
 
@@ -58,8 +55,6 @@ public class SemanticErrorReporter {
             }
 
         }
-
-
 
         if (logWriter != null) {
             for (ErrorDetail error : errors) {

@@ -21,8 +21,10 @@ public class Assignment extends ASTNode {
     public void setRight(String right) {
         this.right = right;
     }
-    public void print(){
-        System.out.print(left);
-
+    @Override
+    public void print(int indent) {
+        System.out.print(indent);
+        System.out.print(" = ");
+        System.out.print(indent);
     }
 }

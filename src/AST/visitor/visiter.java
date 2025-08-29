@@ -1,5 +1,15 @@
 package AST.visitor;
 
+
+import AST.node.Css.CSSProperty;
+import AST.node.Css.CSSValue;
+import AST.node.Css.CssSelector;
+import AST.node.Expression.*;
+import AST.node.Html.*;
+import AST.node.MethodCallNode;
+import AST.node.Html.ParenthesizedExpressionNode;
+import AST.node.ThisKeywordNode;
+import CodeGeneration.CodeGeneration;
 import SymbolTablee.Row;
 import SymbolTablee.SymbolTabol;
 import gen.AngularParser;
@@ -12,51 +22,88 @@ import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import semantic.SemanticErrorReporter;
 import semantic.SemanticErrorType;
+
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+
 public class visiter extends AngularParserBaseVisitor {
 
-    private SymbolTabol symboltabel;
-    private SemanticErrorReporter errorReporter;
+    private StringBuilder jsBuffer = new StringBuilder();
 
 
-    private Set<String> importedModules = new HashSet<>();
-    private Set<String> cssPropertiesInRule = new HashSet<>();
 
-    private String currentImportSource = "";
-    public visiter(SymbolTabol symbolTable, SemanticErrorReporter errorReporter) {
-        this.symboltabel = symbolTable;
-        this.errorReporter = errorReporter;
+    public void clearJsBuffer() {
+        jsBuffer.setLength(0);
     }
 
+    public String getJsBufferContent() {
+        return jsBuffer.toString();
+    }
+    private FileWriter file;
+    private boolean visit = false;
+    private SymbolTabol symboltabel;
+    private SemanticErrorReporter errorReporter;
+    private Set<String> importedModules = new HashSet<>();
+    private Set<String> cssPropertiesInRule = new HashSet<>();
+    private String currentImportSource = "";
+    private final String filePath;
 
+    private String mainComponentName = "app-root";
+    private String mainTemplate = "";
 
+    public visiter(SymbolTabol symbolTable, SemanticErrorReporter errorReporter, String filePath) {
+        this.symboltabel = symbolTable;
+        this.errorReporter = errorReporter;
+        this.filePath = filePath;
 
-
+        try {
+            this.file = new FileWriter(filePath, false); // false = overwrite
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public Object visitProgram(AngularParser.ProgramContext ctx) {
-
-//        System.out.println(  "\n" +"                ********* Print AST  ********       "+"\n ");
-
         ProgramNode pro = new ProgramNode();
-        if(ctx.statement() !=null){
 
-            for(int i=0;i<ctx.statement().size();i++){
+
+        writeToFile(CodeGeneration.HTMLGenerate.openDocument());
+
+
+        writeToFile(CodeGeneration.HTMLGenerate.generateListPage());
+        writeToFile(CodeGeneration.HTMLGenerate.generateAddPage());
+        writeToFile(CodeGeneration.HTMLGenerate.generateDetailsPage());
+
+
+        if (ctx.statement() != null) {
+            for (int i = 0; i < ctx.statement().size(); i++) {
                 this.visitStatement(ctx.statement(i));
             }
         }
 
 
-        return null;
+        writeToFile(CodeGeneration.JSGenerate.openScript());
+        writeToFile(CodeGeneration.JSGenerate.generateScript());
+        writeToFile(jsBuffer.toString());
+        writeToFile(CodeGeneration.JSGenerate.closeScript());
+
+        writeToFile(CodeGeneration.HTMLGenerate.closeDocument());
+
+        return pro;
     }
+
+
 
 
 
     @Override
     public StatementNode visitStatement(AngularParser.StatementContext ctx) {
+
         if(ctx.importStatement() != null){
             this.visitImportStatement(ctx.importStatement());
         }
@@ -66,6 +113,7 @@ public class visiter extends AngularParserBaseVisitor {
        else if (ctx.decorator() !=null) {
         this.visitDecorator(ctx.decorator());
     }
+
        else if(ctx.variableStatement() !=null){
            this.visitVariableStatement(ctx.variableStatement());
         }
@@ -84,7 +132,15 @@ public class visiter extends AngularParserBaseVisitor {
         else if (ctx.interfaceDeclaration() !=null) {
             this.visitInterfaceDeclaration(ctx.interfaceDeclaration());
         }
+       else if (ctx.expression() != null) {
+            this.visit(ctx.expression());
 
+        }
+
+        else if (ctx.assignment() != null) {
+            this.visit(ctx.assignment());
+
+        }
         return null;
     }
 
@@ -93,7 +149,7 @@ public class visiter extends AngularParserBaseVisitor {
         Assignment as =new Assignment();
         if (ctx.Identifier(0)!=null) {
             as.setLeft(ctx.Identifier(0).toString());
-            as.print();
+            as.print(0);
             Row row = new Row();
             row.setLine(ctx.getStart().getLine());
             row.setName(ctx.Identifier(1).getText());
@@ -105,7 +161,7 @@ public class visiter extends AngularParserBaseVisitor {
         System.out.print(".");
         if (ctx.Identifier(1)!=null) {
             as.setLeft(ctx.Identifier(1).toString());
-            as.print();
+            as.print(0);
             Row row = new Row();
             row.setLine(ctx.Identifier(1).getSymbol().getLine());
             row.setType("Assignment");
@@ -117,8 +173,9 @@ public class visiter extends AngularParserBaseVisitor {
 
 
         System.out.print("=");
-//        if(ctx.expression() !=null){
-//            this.visitExpression(ctx.expression());
+//        if (ctx.expression() != null) {
+//           this.visit(ctx.expression());
+//
 //        }
         System.out.println(";");
         return as;
@@ -303,6 +360,7 @@ public class visiter extends AngularParserBaseVisitor {
             row.setName("selector:");
             row.setType("String");
             row.setValue(ctx.StringLiteral().getText());
+            mainComponentName = ctx.StringLiteral().getText().replace("'", "").replace("\"", "");
 
             symboltabel.getRows().add(row);
         }
@@ -334,7 +392,6 @@ public class visiter extends AngularParserBaseVisitor {
             com.print();
             this.visitTemplate(ctx.template());
 
-
             row.setName("template:");
             row.setType("HTML");
             row.setValue(ctx.template().getText());
@@ -350,6 +407,7 @@ public class visiter extends AngularParserBaseVisitor {
 
 
 
+
             row.setName("styles");
             row.setType("SCC");
             row.setValue(ctx.STYLES().getText());
@@ -362,30 +420,36 @@ public class visiter extends AngularParserBaseVisitor {
 
     @Override
     public Object visitStyles(AngularParser.StylesContext ctx) {
-        System.out.println("  `");
-        for (var property : ctx.styleRule()) {
-            this.visitStyleRule(property);
-            System.out.print(",");
+        for (int i = 0; i < ctx.styleRule().size(); i++) {
+            this.visitStyleRule(ctx.styleRule(i));
+
+            System.out.println();
         }
-        System.out.println("  `");
+
         return null;
     }
 
     @Override
     public Object visitStyleRule(AngularParser.StyleRuleContext ctx) {
-        String cssScopeName = "css" ;
+
+        String cssScopeName = "css";
         symboltabel.enterScope(cssScopeName);
         cssPropertiesInRule.clear();
 
-        if(ctx.cssSelector()!=null){
+        if (ctx.cssSelector() != null) {
             this.visitCssSelector(ctx.cssSelector());
         }
-        if(ctx.cssDeclaration()!=null) {
+
+        if (ctx.cssDeclaration() != null) {
+
             System.out.print(" {");
-            for (var declaration : ctx.cssDeclaration()) {
+
+            for (AngularParser.CssDeclarationContext declaration : ctx.cssDeclaration()) {
                 this.visitCssDeclaration(declaration);
+
             }
-            System.out.println("  }");
+
+            System.out.println(" }");
         }
 
         symboltabel.exitScope();
@@ -395,7 +459,7 @@ public class visiter extends AngularParserBaseVisitor {
     @Override
     public Object visitCssSelector(AngularParser.CssSelectorContext ctx) {
         CssSelector selector = null;
-        // ... (الكود الحالي) ...
+
         if (ctx.DOT() != null) {
             selector = new CssSelector(CssSelector.Type.DOT, ctx.Identifier().getText());
         } else if (ctx.HASH_SELECTOR() != null) {
@@ -412,31 +476,21 @@ public class visiter extends AngularParserBaseVisitor {
             selector = new CssSelector(CssSelector.Type.TAG, "h2");
         }
 
-        if (selector != null) {
-            selector.print(0);
-        }
-        return selector;
+
+            if (selector != null) {
+                selector.print(0);
+            }
+
+        return null;
     }
 
     @Override
     public Object visitCssDeclaration(AngularParser.CssDeclarationContext ctx) {
-        if (ctx.cssProperty() != null) {
-            this.visitCssProperty(ctx.cssProperty());
-        }
+
 
         String propertyName = null;
         if (ctx.cssProperty() != null) {
-            AngularParser.CssPropertyContext propCtx = ctx.cssProperty();
-            if (propCtx.COLOR() != null) propertyName = propCtx.COLOR().getText();
-            else if (propCtx.BACKGROUND() != null) propertyName = propCtx.BACKGROUND().getText();
-            else if (propCtx.FONT_SIZE() != null) propertyName = propCtx.FONT_SIZE().getText();
-            else if (propCtx.WIDTH() != null) propertyName = propCtx.WIDTH().getText();
-            else if (propCtx.HEIGHT() != null) propertyName = propCtx.HEIGHT().getText();
-            else if (propCtx.DISPLAY() != null) propertyName = propCtx.DISPLAY().getText();
-            else if (propCtx.POSITION() != null) propertyName = propCtx.POSITION().getText();
-            else if (propCtx.MARGIN() != null) propertyName = propCtx.MARGIN().getText();
-            else if (propCtx.PADDING() != null) propertyName = propCtx.PADDING().getText();
-            else if (propCtx.BORDER() != null) propertyName = propCtx.BORDER().getText();
+            propertyName = ctx.cssProperty().getText();
         }
 
         String propertyValue = "";
@@ -448,6 +502,12 @@ public class visiter extends AngularParserBaseVisitor {
         }
         propertyValue = propertyValue.trim();
 
+        // Print the declaration in a single line
+        if (propertyName != null && !propertyName.isEmpty()) {
+            System.out.print("  " + propertyName + ": " + propertyValue + ";");
+        }
+
+        // Existing semantic and symbol table logic remains unchanged below
         if (propertyName != null && !propertyName.isEmpty()) {
             Row propertyRow = new Row();
             propertyRow.setLine(ctx.getStart().getLine());
@@ -477,6 +537,7 @@ public class visiter extends AngularParserBaseVisitor {
         return null;
     }
 
+
     @Override
     public Object visitCssProperty(AngularParser.CssPropertyContext ctx) {
         CSSProperty css = new CSSProperty();
@@ -497,7 +558,7 @@ public class visiter extends AngularParserBaseVisitor {
             css.setName(propertyTokenText + ": ");
             css.print(0);
         }
-        return css;
+        return ctx.getText();
     }
 
     @Override
@@ -519,11 +580,7 @@ public class visiter extends AngularParserBaseVisitor {
             valText = ctx.CSS_KEYWORD().getText();
             value.setValue(valText);
         }
-        else if (ctx.CSS_VALUE_STRING() != null) {
-            valText = ctx.CSS_VALUE_STRING().getText();
-            value.setValue(valText);
-            value.print(0);
-        }
+
         else if (ctx.NumberLiteral() != null) {
             valText = ctx.NumberLiteral().getText();
             value.setValue(valText);
@@ -548,34 +605,67 @@ public class visiter extends AngularParserBaseVisitor {
         return tem;
     }
 
+
     @Override
     public Object visitHtmlContent(AngularParser.HtmlContentContext ctx) {
-        for (int i=0;i<ctx.htmlElement().size();i++) {
-            if (ctx.htmlElement() != null) {
+
+        for (int i = 0; i < ctx.htmlElement().size(); i++) {
+            if (ctx.htmlElement(i) != null) {
                 this.visitHtmlElement(ctx.htmlElement(i));
             }
         }
-        for (int i=0;i<ctx.interpolation().size();i++)
-            if (ctx.interpolation()!=null) {
-                this.visitInterpolation(ctx.interpolation(i));
 
+
+        for (int i = 0; i < ctx.interpolation().size(); i++) {
+            if (ctx.interpolation(i) != null) {
+                this.visitInterpolation(ctx.interpolation(i));
             }
+        }
+
+
+        for (int i = 0; i < ctx.Identifier().size(); i++) {
+            String text = ctx.Identifier(i).getText();
+            HtmlIdentifierNode idNode = new HtmlIdentifierNode(text);
+            idNode.setName(text);
+            idNode.print(0);
+            Row row = new Row();
+            row.setName(text);
+            row.setType("Identifier");
+            row.setValue("text node in HTML");
+            row.setLine(ctx.start.getLine());
+            symboltabel.addRow(row);
+
+
+
+        }
 
         return null;
     }
 
+
     @Override
     public Object visitInterpolation(AngularParser.InterpolationContext ctx) {
 
-        Binding html = new Binding();
+
+        String expr = ctx.PROPERTY_BINDING().getText();
+
+
+        InterpolationNode node = new InterpolationNode(expr);
+        node.setExpression(ctx.PROPERTY_BINDING().getText());
+         node.print(0);
+
+        Row row = new Row();
+        row.setName("Interpolation");
+        row.setType("Interpolation");
+        row.setValue( expr );
+        row.setLine(ctx.start.getLine());
+        symboltabel.addRow(row);
 
 
 
-        html.setString(ctx.PROPERTY_BINDING().getText());
-        html.print();
+        return node;
 
 
-        return html;
     }
 
     @Override
@@ -590,6 +680,26 @@ public class visiter extends AngularParserBaseVisitor {
         } else if (ctx.h2Element() != null) {
             return this.visitH2Element(ctx.h2Element());
         }
+        else if (ctx.formElement() != null) {
+            return this.visitFormElement(ctx.formElement());
+        }
+
+      else if (ctx.buttonElement() != null) {
+        return this.visitButtonElement(ctx.buttonElement());
+    }
+        else if (ctx.navElement() != null) {
+            return this.visitNavElement(ctx.navElement());
+        }
+        else if (ctx.inputElement() != null) {
+            return this.visitInputElement(ctx.inputElement());
+        }
+        else if (ctx.textareaElement() != null) {
+            return this.visitTextareaElement(ctx.textareaElement());
+        }
+
+
+
+
         return null;
     }
 
@@ -598,7 +708,7 @@ public class visiter extends AngularParserBaseVisitor {
         DivElementNode div =new DivElementNode();
         symboltabel.enterScope("div");
 
-        // إضافة سطر للـ Symbol Table (لنفترض أن "div" هو المتغير الذي نراه)
+
         Row row = new Row();
         row.setName("div");
         row.setType("HTMLElement");
@@ -615,6 +725,7 @@ public class visiter extends AngularParserBaseVisitor {
         }
         System.out.println("</" + ctx.DIV_TAG(0).getText() + ">");
         symboltabel.exitScope();
+
         return div;
     }
 
@@ -623,7 +734,7 @@ public class visiter extends AngularParserBaseVisitor {
         PElementNode p =new PElementNode();
         symboltabel.enterScope("p");
 
-        // إضافة سطر للـ Symbol Table
+
         Row row = new Row();
         row.setName("p");
         row.setType("HTMLElement");
@@ -640,6 +751,8 @@ public class visiter extends AngularParserBaseVisitor {
         }
         System.out.println("</" + ctx.P_TAG(0).getText() + ">");
         symboltabel.exitScope();
+
+
         return p;
     }
 
@@ -648,7 +761,7 @@ public class visiter extends AngularParserBaseVisitor {
         H2Element H2 =new H2Element();
         symboltabel.enterScope("H2");
 
-        // إضافة سطر للـ Symbol Table
+
         Row row = new Row();
         row.setName("H2");
         row.setType("HTMLElement");
@@ -720,8 +833,149 @@ public class visiter extends AngularParserBaseVisitor {
 
         System.out.println("/>");
         symboltabel.exitScope();
+
         return null;
 
+    }
+
+
+    @Override
+    public Object visitFormElement(AngularParser.FormElementContext ctx) {
+        FormElement form =new FormElement();
+        symboltabel.enterScope("form");
+
+
+        Row row = new Row();
+        row.setName("form");
+        row.setType("HTMLElement");
+        row.setValue("form element in template");
+        row.setLine(ctx.start.getLine());
+        symboltabel.addRow(row);
+        System.out.print(ctx.HTML_TAG_OPEN() + ctx.FORM(0).getText());
+        if (ctx.htmlAttributes() != null) {
+            this.visitHtmlAttributes(ctx.htmlAttributes());
+        }
+        System.out.println(">");
+        if (ctx.htmlContent() != null) {
+            this.visitHtmlContent(ctx.htmlContent());
+        }
+        System.out.println("</" + ctx.FORM(0).getText() + ">");
+        symboltabel.exitScope();
+        return form;
+    }
+
+    @Override
+    public Object visitButtonElement(AngularParser.ButtonElementContext ctx) {
+        buttonElement button =new buttonElement();
+        symboltabel.enterScope("button");
+
+
+        Row row = new Row();
+        row.setName("button");
+        row.setType("HTMLElement");
+        row.setValue("button element in template");
+        row.setLine(ctx.start.getLine());
+        symboltabel.addRow(row);
+        System.out.print(ctx.HTML_TAG_OPEN() + ctx.BUTTON(0).getText());
+        if (ctx.htmlAttributes() != null) {
+            this.visitHtmlAttributes(ctx.htmlAttributes());
+        }
+        System.out.println(">");
+        if (ctx.htmlContent() != null) {
+            this.visitHtmlContent(ctx.htmlContent());
+        }
+        System.out.println("</" + ctx.BUTTON(0).getText() + ">");
+        symboltabel.exitScope();
+
+        return button;
+    }
+
+    @Override
+    public Object visitNavElement(AngularParser.NavElementContext ctx) {
+        NavElement  nav =new NavElement();
+        symboltabel.enterScope("nav");
+
+
+        Row row = new Row();
+        row.setName("nav");
+        row.setType("HTMLElement");
+        row.setValue("nav element in template");
+        row.setLine(ctx.start.getLine());
+        symboltabel.addRow(row);
+        System.out.print(ctx.HTML_TAG_OPEN() + ctx.NAV(0).getText());
+        if (ctx.htmlAttributes() != null) {
+            this.visitHtmlAttributes(ctx.htmlAttributes());
+        }
+        System.out.println(">");
+        if (ctx.htmlContent() != null) {
+            this.visitHtmlContent(ctx.htmlContent());
+        }
+        System.out.println("</" + ctx.NAV(0).getText() + ">");
+        symboltabel.exitScope();
+
+        return nav;
+    }
+
+    private void writeToFile(String code) {
+        if (code != null && !code.isEmpty()) {
+            try {
+
+                file.write(code);
+                file.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    @Override
+    public Object visitInputElement(AngularParser.InputElementContext ctx) {
+        InputElement  input =new InputElement();
+        symboltabel.enterScope("input");
+
+        Row row = new Row();
+        row.setName("input");
+        row.setType("HTMLElement");
+        row.setValue("input element in template");
+        row.setLine(ctx.start.getLine());
+        symboltabel.addRow(row);
+
+        System.out.print(ctx.HTML_TAG_OPEN() + ctx.INPUT().getText());
+        if (ctx.htmlAttributes() != null) {
+            this.visitHtmlAttributes(ctx.htmlAttributes());
+        }
+
+        System.out.println("/>");
+        symboltabel.exitScope();
+
+        return input;
+    }
+
+
+    @Override
+    public Object visitTextareaElement(AngularParser.TextareaElementContext ctx) {
+        TextareaElement  textarea =new TextareaElement();
+        symboltabel.enterScope("textarea");
+
+
+        Row row = new Row();
+        row.setName("textarea");
+        row.setType("HTMLElement");
+        row.setValue("textarea element in template");
+        row.setLine(ctx.start.getLine());
+        symboltabel.addRow(row);
+        System.out.print(ctx.HTML_TAG_OPEN() + ctx.TEXTAREA(0).getText());
+        if (ctx.htmlAttributes() != null) {
+            this.visitHtmlAttributes(ctx.htmlAttributes());
+        }
+        System.out.println(">");
+        if (ctx.htmlContent() != null) {
+            this.visitHtmlContent(ctx.htmlContent());
+        }
+        System.out.println("</" + ctx.TEXTAREA(0).getText() + ">");
+        symboltabel.exitScope();
+        return textarea;
     }
         @Override
     public Object visitHtmlAttributes(AngularParser.HtmlAttributesContext ctx) {
@@ -760,7 +1014,12 @@ public class visiter extends AngularParserBaseVisitor {
             }
         }
 
+            for (int i=0 ;i<ctx.formAttribute().size();i++){
+                if (ctx.srcAttribute()!=null){
+                    this.visitFormAttribute(ctx.formAttribute(i));
+                }
 
+            }
 
 
         for (int i=0 ;i<ctx.srcAttribute().size();i++){
@@ -788,12 +1047,38 @@ public class visiter extends AngularParserBaseVisitor {
     }
 
     @Override
+    public Object visitFormAttribute(AngularParser.FormAttributeContext ctx) {
+        String name = null;
+        String value = null;
+
+        if (ctx.TYPE() != null) {
+            name = "type";
+            value = ctx.StringLiteral().getText().replace("\"", "").replace("'", "");
+            System.out.print(" " + name + "=\"" + value + "\"");
+        } else if (ctx.PLACEHOLDER() != null) {
+            name = "placeholder";
+            value = ctx.StringLiteral().getText().replace("\"", "").replace("'", "");
+            System.out.print(" " + name + "=\"" + value + "\"");
+        } else if (ctx.ROWS() != null) {
+            name = "rows";
+            value = ctx.StringLiteral().getText().replace("\"", "").replace("'", "");
+            System.out.print(" " + name + "=\"" + value + "\"");
+        } else if (ctx.REQUIRED_ATTR() != null) {
+            name = "required";
+            value = null;
+            System.out.print(" " + name);
+        }
+        // ...
+        return new FormAttributeNode(name, value);
+    }
+
+    @Override
     public Object visitAngularDirective(AngularParser.AngularDirectiveContext ctx) {
         AngularDirective angD = new AngularDirective();
 
 
         Row row = new Row();
-        row.setName(ctx.getText());
+        row.setName("Directive");
         row.setType("Directive");
         row.setValue(ctx.getText());
         row.setLine(ctx.start.getLine());
@@ -847,58 +1132,117 @@ public class visiter extends AngularParserBaseVisitor {
                         snapshot
                 );
             }
-            angD.setString(ctx.NG_IF().getText());
-            angD.print(0);
-            System.out.print("=");
+
+            angD.setId(ctx.NG_IF().getText());
             angD.setString(ctx.StringLiteral().getText());
             angD.print(0);
         }
+
+
+
+        String navCode = CodeGeneration.HTMLGenerate.openSection(angD);
+        writeToFile(navCode);
+
+
         return angD;
     }
 
     @Override
     public Object visitAngularEvent(AngularParser.AngularEventContext ctx) {
-        AngularDirective ang =new AngularDirective();
-        Row row = new Row();
-        row.setName(ctx.CLICK_EVENT().getText());
-        row.setType("Event");
-        row.setValue(ctx.getText());
-        row.setLine(ctx.start.getLine());
-        symboltabel.addRow(row);
-        ang.setString(ctx.CLICK_EVENT().toString());
-        ang.print(0);
-        ang.setString(ctx.EQUAL().toString());
-        ang.print(0);
-        ang.setString(ctx.StringLiteral().toString());
-        ang.print(0);
-        return ang;
+     AngularEventNode Ang =   new AngularEventNode();
+        String eventName = null;
+
+            String value = ctx.StringLiteral().getText()
+                    .replace("\"", "")
+                    .replace("'", "");
+            Ang.setValue(ctx.StringLiteral().getText());
+
+        if (ctx.CLICK_EVENT() != null) {
+            eventName = ctx.CLICK_EVENT().getText();
+            Ang.setName(ctx.CLICK_EVENT().getText());
+            Ang.print(0);
+        } else if (ctx.NG_SUBMIT_EVENT() != null) {
+            eventName = ctx.NG_SUBMIT_EVENT().getText();
+            Ang.setName(ctx.NG_SUBMIT_EVENT().getText());
+            Ang.print(0);
+        }
+
+
+
+        String attr = CodeGeneration.HTMLGenerate.generateAngularEvent(eventName, value);
+        writeToFile(attr);
+
+
+        return Ang ;
     }
+
 
     @Override
     public Object visitAngularBinding(AngularParser.AngularBindingContext ctx) {
-        AngularDirective ang =new AngularDirective();
+        Binding bin = new Binding();
         Row row = new Row();
-        row.setName(ctx.BINDING().getText());
         row.setType("Binding");
-        row.setValue(ctx.getText());
         row.setLine(ctx.start.getLine());
-        symboltabel.addRow(row);
-        System.out.print(ctx.BINDING().getText() + " = ");
-        if (ctx.assignment() != null) {
 
-            this.visitAssignment(ctx.assignment());
-        } else if (ctx.StringLiteral() != null) {
-            ang.setString(ctx.StringLiteral().getText());
-            ang.print(0);
+
+        String rawBinding = ctx.getChild(0).getText();
+        String rawValue = ctx.getChild(2).getText();
+
+
+        String variableName;
+
+
+        if (rawBinding.equals("[(ngModel)]")) {
+
+            variableName = rawValue.replaceAll("[\"']", "");
+            bin.setElementType("input");
         }
-        return ang;
+
+        else if (rawBinding.equals("[src]") || rawBinding.equals("[alt]")) {
+
+            variableName = rawBinding.replaceAll("[\\[\\]]", "");
+            bin.setElementType("img");
+        }
+
+        else if (rawBinding.startsWith("(click)")) {
+
+            variableName = "button";
+            bin.setElementType("button");
+        }
+
+        else {
+
+            variableName = rawBinding.replaceAll("[\\[\\]]", "");
+            bin.setElementType("div");
+        }
+
+
+        bin.setName(variableName);
+        bin.setString(rawValue);
+
+
+        row.setName(variableName);
+        row.setValue(rawValue);
+        symboltabel.addRow(row);
+
+
+        String htmlLine = CodeGeneration.HTMLGenerate.generateBindingHTML(bin,0);
+        writeToFile(htmlLine);
+
+        // استدعاء التوليد للـ JS
+        String jsLine = CodeGeneration.JSGenerate.generateBindingJS(bin);
+        jsBuffer.append(jsLine);
+
+        return bin;
     }
+
 
     @Override
     public Object visitStyleAttribute(AngularParser.StyleAttributeContext ctx) {
         AngularDirective angs =new AngularDirective();
+
         Row row = new Row();
-        row.setName(ctx.getText());
+        row.setName(ctx.STYLE().getText());
         row.setType("Style");
         row.setValue(ctx.getText());
         row.setLine(ctx.start.getLine());
@@ -911,12 +1255,24 @@ public class visiter extends AngularParserBaseVisitor {
 
         return angs;
     }
+    @Override
+    public Object visitSrcAttribute(AngularParser.SrcAttributeContext ctx) {
+        System.out.print(" src=\"" + ctx.Src().getText().replace("\"", "").replace("'", "") + "\"");
+        return super.visitSrcAttribute(ctx);
+    }
+
+    @Override
+    public Object visitAltAttribute(AngularParser.AltAttributeContext ctx) {
+        System.out.print(" alt=\"" + ctx.Alt().getText().replace("\"", "").replace("'", "") + "\"");
+        return super.visitAltAttribute(ctx);
+    }
 
 
 
 
     @Override
     public Object visitVariableStatement(AngularParser.VariableStatementContext ctx) {
+
         String accessModifier = null;
         if (ctx.PUBLIC() != null) {
             accessModifier = "public";
@@ -990,7 +1346,6 @@ public class visiter extends AngularParserBaseVisitor {
 
         String currentScope = symboltabel.getCurrentScope();
 
-        // accessModifier داخل كلاس فقط
         if (!currentScope.equals("global") && !currentScope.startsWith("method:")) {
             rowType = (accessModifier != null ? accessModifier + " " : "") + "Class " + rowType;
         }
@@ -1032,6 +1387,10 @@ public class visiter extends AngularParserBaseVisitor {
             );
         }
 
+        String jsLine = CodeGeneration.JSGenerate.generateVariableJS(statementNode);
+        jsBuffer.append(jsLine);
+
+
         return statementNode;
     }
     @Override
@@ -1042,7 +1401,7 @@ public class visiter extends AngularParserBaseVisitor {
         row.setName("array");
         row.setType("Array");
         row.setValue(ctx.getText());
-      //  row.setScope(symboltabel.toString());
+
         symboltabel.addRow(row);
         System.out.print("[");
         if (ctx.arrayElements() !=null) {
@@ -1105,13 +1464,13 @@ public class visiter extends AngularParserBaseVisitor {
 
         }
         row.setType("Property");
-     //   row.setScope(symbolTable.getCurrentScope());
 
-        ASTNode valueNode = (ASTNode) visit(ctx.value());
+
+        ASTNode valueNode = (ASTNode) visit(ctx.expression());
         prop.setValue(valueNode);
-        row.setValue(ctx.value().getText());
+        row.setValue(ctx.expression().getText());
 
-     //   visitValue(ctx.value()); // زيارة القيمة نفسها
+
         prop.print(0);
         System.out.println();
         symboltabel.addRow(row);
@@ -1155,8 +1514,6 @@ public class visiter extends AngularParserBaseVisitor {
         row.setLine(ctx.start.getLine());
         symboltabel.addRow(row);
 
-        // يمكننا زيارة المعاملات إذا أردت
-        symboltabel.exitScope();
         System.out.print("  " + functionName);
         System.out.print("(");
         if (ctx.parameterList() != null) {
@@ -1165,8 +1522,38 @@ public class visiter extends AngularParserBaseVisitor {
             System.out.print(" ");
         }
         System.out.println(")");
-        visitBlock(ctx.block());
+
+
+
+
+
+
+
+        String params = ctx.parameterList() != null ? ctx.parameterList().getText() : "";
+
+
+
+        StringBuilder functionBody = new StringBuilder();
+
+        if (ctx.block() != null) {
+            for (var statement : ctx.block().statement()) {
+                if (statement.expression() != null) {
+
+                    ExpressionNode exprNode = (ExpressionNode) this.visit(statement.expression());
+                    String jsCode = CodeGeneration.JSGenerate.generateExpressionJS(exprNode);
+                    functionBody.append("      ").append(jsCode).append(";\n");
+                }
+            }
+        }
+
+        String cleanParams = params.replaceAll(":[^,\\)]+", "");
+        String jsFunction = CodeGeneration.JSGenerate.generateFunctionJS(functionName, cleanParams, functionBody.toString());
+        jsBuffer.append(jsFunction);
+
+        symboltabel.exitScope();
+
         return null;
+
     }
 
     @Override
@@ -1185,7 +1572,7 @@ public class visiter extends AngularParserBaseVisitor {
             Row row = new Row();
             row.setName("class");
             row.setType("Class");
-            row.setValue(ctx.Identifier().getText()); // مثل: AppComponent
+            row.setValue(ctx.Identifier().getText());
             row.setLine(ctx.getStart().getLine());
             symboltabel.addRow(row);
 
@@ -1201,6 +1588,7 @@ public class visiter extends AngularParserBaseVisitor {
         System.out.print("}");
         symboltabel.exitScope();
 symboltabel.exitScope();
+
 
         return classes;
     }
@@ -1299,80 +1687,114 @@ symboltabel.exitScope();
     }
 
 
-    @Override
-    public ExpressionNode visitMultiplicationDivisionExpression(AngularParser.MultiplicationDivisionExpressionContext ctx) {
-        ExpressionNode left = (ExpressionNode) visit(ctx.expression(0));
-        ExpressionNode right = (ExpressionNode) visit(ctx.expression(1));
-        String operator = ctx.MULT() != null ? ctx.MULT().getText() : ctx.DIV().getText();
-        return new BinaryExpressionNode(left, operator, right, ctx.start.getLine());
-    }
 
     @Override
-    public ExpressionNode visitAdditionSubtractionExpression(AngularParser.AdditionSubtractionExpressionContext ctx) {
-        ExpressionNode left = (ExpressionNode) visit(ctx.expression(0));
-        ExpressionNode right = (ExpressionNode) visit(ctx.expression(1));
-        String operator = ctx.ADD() != null ? ctx.ADD().getText() : ctx.SUB().getText();
-        return new BinaryExpressionNode(left, operator, right, ctx.start.getLine());
-    }
+    public Object visitExpression(AngularParser.ExpressionContext ctx) {
 
-    @Override
-    public ExpressionNode visitLiteralExpression(AngularParser.LiteralExpressionContext ctx) {
-        Object value = null;
-        if (ctx.literal().StringLiteral() != null) {
-            String text = ctx.literal().StringLiteral().getText();
-            value = text.substring(1, text.length() - 1);
-        } else if (ctx.literal().NumberLiteral() != null) {
-            value = Double.parseDouble(ctx.literal().NumberLiteral().getText());
-        } else if (ctx.literal().BooleanLiteral() != null) {
-            value = Boolean.parseBoolean(ctx.literal().BooleanLiteral().getText());
+        // Case: expression = expression
+        if (ctx.EQUAL() != null && ctx.expression().size() == 2) {
+            AssignmentExpressionNode node = new AssignmentExpressionNode();
+            node.setLeft((ExpressionNode) visit(ctx.expression(0)));
+            node.setRight((ExpressionNode) visit(ctx.expression(1)));
+
+            node.print(0);
+            return node;
         }
-        return new LiteralExpressionNode(value, ctx.start.getLine());
+
+        if (ctx.DOT() != null && ctx.Identifier() != null && ctx.LPAREN() == null) {
+            MemberAccessNode node = new MemberAccessNode();
+            node.setObject((ExpressionNode) visit(ctx.expression(0)));
+            node.setProperty(ctx.Identifier().getText());
+
+            node.print(0);
+            return node;
+        }
+
+
+        if (ctx.DOT() != null && ctx.Identifier() != null && ctx.LPAREN() != null) {
+            MethodCallNode node = new MethodCallNode();
+            node.setCaller((ExpressionNode) visit(ctx.expression(0)));
+            node.setMethodName(ctx.Identifier().getText());
+
+            if (ctx.expressionList() != null) {
+                List<ExpressionNode> args = new ArrayList<>();
+                for (var e : ctx.expressionList().expression()) {
+                    args.add((ExpressionNode) visit(e));
+                }
+                node.setArguments(args);
+            }
+
+
+            return node;
+        }
+
+
+        if (ctx.Identifier() != null && ctx.LPAREN() != null) {
+            MethodCallNode node = new MethodCallNode();
+            node.setMethodName(ctx.Identifier().getText());
+
+            if (ctx.expressionList() != null) {
+                List<ExpressionNode> args = new ArrayList<>();
+                for (var e : ctx.expressionList().expression()) {
+                    args.add((ExpressionNode) visit(e));
+                }
+                node.setArguments(args);
+            }
+
+            node.print(0);
+            return node;
+        }
+
+
+        if (ctx.literal() != null) {
+            LiteralNode node = new LiteralNode();
+            node.setValue(ctx.literal().getText());
+
+            node.print(0);
+            return node;
+        }
+
+
+        if (ctx.object() != null) {
+            ASTNode objNode = (ASTNode) visit(ctx.object());
+
+            return objNode;
+        }
+
+
+        if (ctx.Identifier() != null) {
+            IdentifierNode node = new IdentifierNode();
+            node.setName(ctx.Identifier().getText());
+
+            node.print(0);
+            return node;
+        }
+
+
+        if (ctx.LPAREN() != null && ctx.RPAREN() != null && ctx.expression().size() == 1) {
+            ExpressionNode inner = (ExpressionNode) visit(ctx.expression(0));
+            ParenthesizedExpressionNode node = new ParenthesizedExpressionNode(inner);
+
+            node.print(0);
+            return node;
+        }
+
+
+        if (ctx.THIS() != null) {
+            ThisKeywordNode node = new ThisKeywordNode();
+            node.setValue(ctx.THIS().getText());
+
+            node.print(0);
+            return node;
+        }
+
+
+
+        return null;
     }
 
 
-    @Override
-    public ExpressionNode visitParenthesizedExpression(AngularParser.ParenthesizedExpressionContext ctx) {
-        ExpressionNode inner = (ExpressionNode) visit(ctx.expression());
-        return new ParenthesizedExpressionNode(inner, ctx.start.getLine());
-    }
 
-    @Override
-    public ExpressionNode visitPropertyBindingExpression(AngularParser.PropertyBindingExpressionContext ctx) {
-
-        String propertyName = ctx.propertyBinding().BINDING().getText();
-        propertyName = propertyName.substring(1, propertyName.length() - 1);
-
-        String valueText = ctx.propertyBinding().StringLiteral().getText();
-        ExpressionNode valueExpr = new LiteralExpressionNode(valueText.substring(1, valueText.length() - 1), ctx.propertyBinding().StringLiteral().getSymbol().getLine());
-
-        return new PropertyBindingExpressionNode(propertyName, valueExpr, ctx.start.getLine());
-    }
-
-    @Override
-    public ExpressionNode visitTwoWayBindingExpression(AngularParser.TwoWayBindingExpressionContext ctx) {
-
-        String modelName = ctx.twoWayBinding().TWO_WAY_BINDING().getText();
-
-        modelName = modelName.substring(2, modelName.length() - 2);
-
-
-        String dataText = ctx.twoWayBinding().StringLiteral().getText();
-        ExpressionNode dataExpr = new LiteralExpressionNode(dataText.substring(1, dataText.length() - 1), ctx.twoWayBinding().StringLiteral().getSymbol().getLine());
-
-        return new TwoWayBindingExpressionNode(modelName, dataExpr, ctx.start.getLine());
-    }
-
-    @Override
-    public ExpressionNode visitNgDirectiveExpression(AngularParser.NgDirectiveExpressionContext ctx) {
-
-        String directiveName = ctx.ngDirective().DIRECTIVE().getText();
-        directiveName = directiveName.substring(1);
-
-        String conditionText = ctx.ngDirective().StringLiteral().getText();
-        ExpressionNode conditionExpr = new LiteralExpressionNode(conditionText.substring(1, conditionText.length() - 1), ctx.ngDirective().StringLiteral().getSymbol().getLine());
-
-        return new NgDirectiveExpressionNode(directiveName, conditionExpr, ctx.start.getLine());
-    }
     @Override
     public Object visitLiteral(AngularParser.LiteralContext ctx) {
         return super.visitLiteral(ctx);
@@ -1382,10 +1804,10 @@ symboltabel.exitScope();
     public Object visitPropertyBinding(AngularParser.PropertyBindingContext ctx) {
         Binding por =new Binding();
         por.setString(ctx.BINDING().toString());
-        por.print();
+        por.print(0);
         System.out.print("=");
         por.setString(ctx.StringLiteral().toString());
-        por.print();
+        por.print(0);
         return por;
     }
 
@@ -1393,22 +1815,23 @@ symboltabel.exitScope();
     public Object visitTwoWayBinding(AngularParser.TwoWayBindingContext ctx) {
         Binding por =new Binding();
         por.setString(ctx.TWO_WAY_BINDING().toString());
-        por.print();
+        por.print(0);
         System.out.print("=");
         por.setString(ctx.StringLiteral().toString());
-        por.print();
-        return null;
+        por.print(0);
+        return por;
     }
 
     @Override
     public Object visitNgDirective(AngularParser.NgDirectiveContext ctx) {
-        Binding por =new Binding();
-        por.setString(ctx.DIRECTIVE().toString());
-        por.print();
+      AngularDirective ang =new AngularDirective();
+        ang.setString(ctx.DIRECTIVE().toString());
+        ang.print(0);
         System.out.print("=");
-        por.setString(ctx.StringLiteral().toString());
-        por.print();
-        return null;
+        ang.setString(ctx.StringLiteral().toString());
+        ang.print(1);
+
+        return ang;
     }
 
     @Override
@@ -1459,13 +1882,29 @@ symboltabel.exitScope();
 
     @Override
     public Object visitBlock(AngularParser.BlockContext ctx) {
-        System.out.println("{");
-        for (int i=0;i<ctx.statement().size();i++){
+
+        for (int i = 0; i < ctx.statement().size(); i++) {
             this.visitStatement(ctx.statement(i));
         }
-        System.out.println("}");
         return null;
     }
+
+
+
+
+
+    @Override
+    public Object visitExpressionList(AngularParser.ExpressionListContext ctx) {
+        List<ExpressionNode> expressions = new ArrayList<>();
+        for (var exprCtx : ctx.expression()) {
+            expressions.add((ExpressionNode) this.visit(exprCtx));
+        }
+        return expressions;
+    }
+
+
+
+
 
     @Override
     public Object visit(ParseTree tree) {
@@ -1521,5 +1960,8 @@ symboltabel.exitScope();
     public String toString() {
         return super.toString();
     }
+
+
+
 
 }
